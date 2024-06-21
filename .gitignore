@@ -1,0 +1,16 @@
+vendor/
+.env
+src/
+classes/
+config/
+db/
+node_modules/
+pages/
+public/
+report/
+resources/
+storage/
+templates/
+test_functions/
+tested/
+tests/

@@ -1,0 +1,16 @@
+{
+	"name": "Xanak",
+	"version": "1.0.0",
+	"scripts": {
+		"dev": "vite",
+		"php": "php -S localhost:8000 -t public public/index.php && npm run watch",
+		"serve": "browser-sync start --config bs-config.js"
+	},
+	"devDependencies": {
+		"nodemon": "^2.0.7",
+		"vite": "^2.0.0"
+	},
+	"dependencies": {
+		"browser-sync": "^3.0.2"
+	}
+}

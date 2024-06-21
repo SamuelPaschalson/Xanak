@@ -1,0 +1,28 @@
+{
+	"name": "xanak/xanak",
+	"type": "project",
+	"license": "MIT",
+	"autoload": {
+		"psr-4": {
+			"Xanak\\": "xanak/src"
+		}
+	},
+	"authors": [
+		{
+			"name": "Chinomso Iyasara",
+			"email": "samuelpaschalson@gmail.com"
+		}
+	],
+	"scripts": {
+		"post-autoload-dump": [
+			"Xanak\\Console\\Install::postInstall"
+		]
+	},
+	"minimum-stability": "stable",
+	"require": {
+		"symfony/console": "^6.4",
+		"php": "*",
+		"vlucas/phpdotenv": "^5.6",
+		"illuminate/database": "^10.48"
+	}
+}

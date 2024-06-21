@@ -1,0 +1,207 @@
+#!/usr/bin/env php
+<?php
+
+require_once __DIR__ . '/vendor/autoload.php';
+
+class CLI {
+    public function run() {
+        global $argv;
+        $command = $argv[1] ?? null;
+
+        switch ($command) {
+            case 'make:template':
+                $this->makeTemplate($argv[2] ?? null);
+                break;
+            case 'make:page':
+                $this->makePage($argv[2] ?? null);
+                break;
+            case 'make:migration':
+                $this->makeMigration($argv[2] ?? null);
+                break;
+            case 'migrate':
+                $this->migrate();
+                break;
+            case 'carboned:install':
+                $this->installCarbonedFramework();
+                break;
+            case 'serve':
+                $this->serve();
+                break;
+            default:
+                $this->showHelp();
+                break;
+        }
+    }
+
+    private function makeTemplate($name) {
+        if (!$name) {
+            echo "Please provide a template name.\n";
+            return;
+        }
+
+        $templatePath = __DIR__ . "/templates/{$name}_template.php";
+
+        if (file_exists($templatePath)) {
+            echo "Template '{$name}' already exists.\n";
+            return;
+        }
+
+        $content = <<<PHP
+                        <?php ob_start(); ?>
+                        <!-- Your template content here -->
+                        <span>Template content.</span>
+                        <?php require 'layout.php'; ?>
+                        <?php \$content = ob_get_clean(); ?>
+                        <?php require 'layout.php'; ?>
+                        PHP;
+
+        file_put_contents($templatePath, $content);
+        echo "Template '{$name}' created successfully.\n";
+    }
+
+    private function makePage($name) {
+        if (!$name) {
+            echo "Please provide a page name.\n";
+            return;
+        }
+
+        $pagePath = __DIR__ . "/pages/{$name}.php";
+
+        if (file_exists($pagePath)) {
+            echo "Page '{$name}' already exists.\n";
+            return;
+        }
+
+        $content = <<<PHP
+                    <?php
+
+                    require_once __DIR__ . '/../classes/Controller.php';
+
+                    class {$name}Controller extends Controller {
+                        public function index() {
+                            \$this->view('{$name}_template', ['title' => '{$name}']);
+                        }
+                    }
+                    PHP;
+
+        file_put_contents($pagePath, $content);
+        echo "Page '{$name}' created successfully.\n";
+    }
+
+    private function makeMigration($name) {
+        if (!$name) {
+            echo "Please provide a migration name.\n";
+            return;
+        }
+
+        $timestamp = date('YmdHis');
+        $migrationPath = __DIR__ . "/db/migrations/{$timestamp}_{$name}.php";
+
+        $content = <<<PHP
+                        <?php
+                        // Migration script for {$name}
+
+                        \$pdo->exec("CREATE TABLE IF NOT EXISTS {$name} (
+                            id INT AUTO_INCREMENT PRIMARY KEY,
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                        )");
+                        PHP;
+
+        file_put_contents($migrationPath, $content);
+        echo "Migration '{$name}' created successfully.\n";
+    }
+
+    private function migrate() {
+        require_once __DIR__ . '/db/db_connect.php';
+
+        $migrationFiles = glob(__DIR__ . '/db/migrations/*.php');
+
+        foreach ($migrationFiles as $file) {
+            require_once $file;
+            echo "Ran migration: " . basename($file) . "\n";
+        }
+    }
+
+    private function serve() {
+        // echo "\033[33mINFO\033[0m  Server running on [\033[34mhttp://127.0.0.1:3000\033[0m].\n";
+        // echo "\033[33mPress Ctrl+C to stop the server\033[0m\n";
+
+        $command = 'php -S 127.0.0.1:8000 -t public  > server.log 2>&1 &';
+        $browserSyncCommand = 'npx browser-sync start --proxy "127.0.0.1:8000" --files "public/*.php, templates/*.php" --no-notify --no-ui --log-level silent';
+        if (PHP_OS_FAMILY === 'Windows') {
+            pclose(popen("start /B {$command}", 'r'));
+            pclose(popen("start /B {$browserSyncCommand}", 'r'));
+
+            echo "\033[33mINFO\033[0m  Server running on [\033[34mhttp://127.0.0.1:3000\033[0m].\n";
+            echo "\033[33mPress Ctrl+C to stop the server\033[0m\n";
+    
+        } else {
+            shell_exec("{$command} > /dev/null 2>&1 &");
+            shell_exec("{$browserSyncCommand} > /dev/null 2>&1 &");
+
+            echo "\033[33mINFO\033[0m  Server running on [\033[34mhttp://127.0.0.1:3000\033[0m].\n";
+            echo "\033[33mPress Ctrl+C to stop the server\033[0m\n";
+    
+        }
+
+        // Custom logger for PHP built-in server
+        $this->startCustomLogger();
+    }
+
+    private function startCustomLogger() {
+        // $logFile = __DIR__ . '/storage/logs/server.log';
+        $logFile = __DIR__ . '/server.log';
+        // require_once __DIR__ . '/../vendor/autoload.php';
+
+        while (true) {
+            clearstatcache(false, $logFile);
+            $lines = file($logFile);
+            $lastLine = array_pop($lines);
+
+            if ($lastLine) {
+                $requestTime = microtime(true);
+                $loadTime = microtime(true) - $requestTime;
+
+                // Extract URL from log line
+                preg_match('/"GET (.*?) HTTP/', $lastLine, $matches);
+                $url = $matches[1] ?? '';
+
+                // Customize the output
+                $logMessage = sprintf(
+                    "\033[32m%s INFO\033[0m \033[34m%s\033[0m ~ %.2fs\n",
+                    date('Y-m-d H:i:s'),
+                    $url,
+                    $loadTime
+                );
+                // if ($requestTime > ) {
+                //     # code...
+                //     echo $logMessage;
+                // }
+                // echo $logMessage;
+                if (strpos($url, 'favicon.ico') !== false) {
+                    echo "\033[33mFavicon requested\033[0m\n";
+                }
+            }
+
+            // Check for server stop signal (Ctrl+C)
+            if (feof(STDIN)) {
+                break;
+            }
+
+            usleep(500000); // Sleep for half a second to reduce CPU usage
+        }
+    }
+
+    private function showHelp() {
+        echo "Usage: cli [command]\n";
+        echo "\n";
+        echo "Commands:\n";
+        echo "  make:template [name]  Create a new template\n";
+        echo "  make:page [name]      Create a new page\n";
+        echo "  serve                 Start the development server\n";
+    }
+    
+}
+
+$cli = new CLI();
+$cli->run();
