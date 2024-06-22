@@ -1,0 +1,27 @@
+{
+	"name": "xanak/src",
+	"description": "The Xanak Framework package.",
+	"license": "MIT",
+	"autoload": {
+		"psr-4": {
+			"Xanak\\": ""
+		}
+	},
+	"authors": [
+		{
+			"name": "Chinomso Iyasara",
+			"email": "samuelpaschalson@gmail.com"
+		}
+	],
+	"config": {
+		"sort-packages": true
+	},
+	"require": {
+		"symfony/console": "^6.4",
+		"php": "*",
+		"vlucas/phpdotenv": "^1.6",
+		"illuminate/database": "^10.48"
+	},
+	"minimum-stability": "stable",
+	"prefer-stable": true
+}
